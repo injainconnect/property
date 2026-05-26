@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Property Deal Calculator</title>
+<style>
+:root{--primary:#1a5276;--accent:#2980b9;--green:#27ae60;--red:#c0392b;--orange:#e67e22;--bg:#f4f6f8;--card:#fff;--border:#ddd;--text:#2c3e50}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);padding:20px;line-height:1.6}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.6rem;color:var(--primary);margin-bottom:4px;text-align:center}
+.subtitle{text-align:center;color:#777;font-size:0.85rem;margin-bottom:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
+.card h2{font-size:1.1rem;color:var(--primary);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--accent)}
+.input-group{margin-bottom:16px}
+.input-group label{display:block;font-size:0.85rem;font-weight:600;color:#555;margin-bottom:4px}
+.input-group input[type="number"]{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:1rem;transition:border 0.2s}
+.input-group input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(41,128,185,0.1)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.slider-group{margin:16px 0}
+.slider-group label{display:flex;justify-content:space-between;font-size:0.85rem;font-weight:600;color:#555;margin-bottom:8px}
+.slider-group input[type="range"]{width:100%;height:8px;-webkit-appearance:none;background:#e0e0e0;border-radius:4px;outline:none}
+.slider-group input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;background:var(--accent);border-radius:50%;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.2)}
+.split-display{display:flex;justify-content:space-between;margin-top:8px;font-size:0.9rem}
+.split-display .cash{color:var(--orange);font-weight:700}
+.split-display .online{color:var(--accent);font-weight:700}
+.result-table{width:100%;border-collapse:collapse;margin-top:12px}
+.result-table td{padding:10px 12px;border-bottom:1px solid #eee;font-size:0.9rem}
+.result-table td:first-child{color:#555;font-weight:500}
+.result-table td:last-child{text-align:right;font-weight:600;font-size:1rem}
+.result-table tr.highlight td{background:#eaf7f0;color:var(--green);font-size:1.1rem;font-weight:700;border-top:2px solid var(--green)}
+.result-table tr.sub td{color:#888;font-size:0.8rem;padding:6px 12px}
+.result-table tr.total-row td{background:#eaf2fa;color:var(--primary);font-size:1.15rem;font-weight:700;border-top:2px solid var(--accent)}
+.note{font-size:0.75rem;color:#888;margin-top:8px;font-style:italic}
+.rate-inputs{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.rate-inputs .input-group label{font-size:0.75rem}
+.rate-inputs .input-group input{padding:8px 10px;font-size:0.85rem}
+.summary-boxes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.summary-box{text-align:center;padding:14px;border-radius:10px;border:1px solid var(--border)}
+.summary-box .value{font-size:1.3rem;font-weight:700}
+.summary-box .label{font-size:0.7rem;color:#777;margin-top:2px;text-transform:uppercase}
+.summary-box.cash-box{background:#fef9e7;border-color:#f9e79f}
+.summary-box.cash-box .value{color:var(--orange)}
+.summary-box.online-box{background:#eaf2fa;border-color:#aed6f1}
+.summary-box.online-box .value{color:var(--accent)}
+.summary-box.total-box{background:#eaf7f0;border-color:#a9dfbf}
+.summary-box.total-box .value{color:var(--green)}
+@media(max-width:600px){.grid-2,.rate-inputs,.summary-boxes{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Property Deal Calculator</h1>
+<div class="subtitle">Quick calculation for buyer's total cost including registry, TDS, and brokerage</div>
+
+<!-- Inputs -->
+<div class="card">
+<h2>Property Details</h2>
+<div class="grid-2">
+<div class="input-group">
+<label>Plot Size (sq. yards)</label>
+<input type="number" id="plotSize" value="200" min="1" oninput="calculate()">
+</div>
+<div class="input-group">
+<label>Rate per sq. yard (₹)</label>
+<input type="number" id="ratePerYard" value="50000" min="1" oninput="calculate()">
+</div>
+</div>
+
+<div class="input-group">
+<label>Total Property Price (₹) — auto-calculated or enter manually</label>
+<input type="number" id="totalPrice" value="10000000" min="1" oninput="calculate()">
+<div id="totalPriceWords" style="font-size:0.8rem;color:var(--accent);margin-top:4px;font-weight:500"></div>
+</div>
+<p class="note">Enter plot size & rate to auto-calculate, or directly enter total price above.</p>
+</div>
+
+<!-- Cash/Online Split -->
+<div class="card">
+<h2>Cash vs Online Split</h2>
+<div class="slider-group">
+<label>
+<span>Cash: <strong id="cashPctLabel">40%</strong></span>
+<span>Online: <strong id="onlinePctLabel">60%</strong></span>
+</label>
+<input type="range" id="cashSlider" min="0" max="100" value="40" oninput="calculate()">
+</div>
+<div class="summary-boxes">
+<div class="summary-box cash-box">
+<div class="value" id="cashAmount">₹40,00,000</div>
+<div class="label">Cash to Seller</div>
+</div>
+<div class="summary-box online-box">
+<div class="value" id="onlineAmount">₹60,00,000</div>
+<div class="label">Online to Seller</div>
+</div>
+<div class="summary-box total-box">
+<div class="value" id="propertyTotal">₹1,00,00,000</div>
+<div class="label">Property Price</div>
+</div>
+</div>
+</div>
+
+<!-- Rates -->
+<div class="card">
+<h2>Charges & Rates</h2>
+<div class="rate-inputs">
+<div class="input-group">
+<label>Registry (%)</label>
+<input type="number" id="registryRate" value="8" min="0" max="20" step="0.5" oninput="calculate()">
+</div>
+<div class="input-group">
+<label>Cess (%)</label>
+<input type="number" id="cessRate" value="1" min="0" max="10" step="0.5" oninput="calculate()">
+</div>
+<div class="input-group">
+<label>TDS (%)</label>
+<input type="number" id="tdsRate" value="1" min="0" max="5" step="0.5" oninput="calculate()">
+</div>
+<div class="input-group">
+<label>Brokerage (%)</label>
+<input type="number" id="brokerageRate" value="1" min="0" max="5" step="0.5" oninput="calculate()">
+</div>
+</div>
+<p class="note">Registry & Cess are calculated on ONLINE amount only. TDS is on online amount (deducted from seller's payment, paid to govt by buyer). Brokerage is on TOTAL amount.</p>
+</div>
+
+<!-- Results -->
+<div class="card">
+<h2>Buyer's Total Cost Breakdown</h2>
+<table class="result-table">
+<tr>
+<td>Property Price (Total)</td>
+<td id="resultTotal">₹1,00,00,000</td>
+</tr>
+<tr class="sub">
+<td>&nbsp;&nbsp;&nbsp;↳ Cash Component</td>
+<td id="resultCash">₹40,00,000</td>
+</tr>
+<tr class="sub">
+<td>&nbsp;&nbsp;&nbsp;↳ Online Component</td>
+<td id="resultOnline">₹60,00,000</td>
+</tr>
+<tr>
+<td>Registry (<span id="regRateDisplay">8%</span> on online)</td>
+<td id="resultRegistry">₹4,80,000</td>
+</tr>
+<tr>
+<td>Cess (<span id="cessRateDisplay">1%</span> on online)</td>
+<td id="resultCess">₹60,000</td>
+</tr>
+<tr>
+<td>TDS (<span id="tdsRateDisplay">1%</span> on online — paid to govt)</td>
+<td id="resultTDS">₹60,000</td>
+</tr>
+<tr>
+<td>Brokerage (<span id="brkRateDisplay">1%</span> on total)</td>
+<td id="resultBrokerage">₹1,00,000</td>
+</tr>
+<tr class="total-row">
+<td><strong>GRAND TOTAL (Buyer Pays)</strong></td>
+<td id="resultGrandTotal">₹1,07,00,000</td>
+</tr>
+<tr>
+<td colspan="2" style="text-align:right;font-size:0.8rem;color:var(--green);font-style:italic;padding:4px 12px" id="grandTotalWords"></td>
+</tr>
+</table>
+
+<div style="margin-top:16px;padding:12px;background:#fef9e7;border-radius:8px;border:1px solid #f9e79f">
+<table class="result-table" style="margin:0">
+<tr>
+<td style="font-size:0.85rem;color:var(--orange)">Seller receives (Cash)</td>
+<td style="font-size:0.85rem;color:var(--orange)" id="sellerCash">₹40,00,000</td>
+</tr>
+<tr>
+<td style="font-size:0.85rem;color:var(--accent)">Seller receives (Online, after TDS deduction)</td>
+<td style="font-size:0.85rem;color:var(--accent)" id="sellerOnline">₹59,40,000</td>
+</tr>
+<tr>
+<td style="font-size:0.85rem;font-weight:700">Seller total received</td>
+<td style="font-size:0.85rem;font-weight:700" id="sellerTotal">₹99,40,000</td>
+</tr>
+</table>
+</div>
+
+<p class="note" style="margin-top:12px">TDS (₹<span id="tdsNote">60,000</span>) is deducted from seller's online payment and deposited by buyer to Income Tax department. Seller can claim credit in ITR.</p>
+</div>
+
+</div>
+
+<script>
+function formatINR(num) {
+    if (num >= 10000000) {
+        return '₹' + (num / 10000000).toFixed(2) + ' Cr';
+    }
+    return '₹' + num.toLocaleString('en-IN');
+}
+
+function numberToWordsINR(num) {
+    if (num === 0) return 'Zero Rupees';
+    const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+        'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+    const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+
+    function convertBelow1000(n) {
+        if (n === 0) return '';
+        if (n < 20) return ones[n];
+        if (n < 100) return tens[Math.floor(n/10)] + (n%10 ? ' ' + ones[n%10] : '');
+        return ones[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' ' + convertBelow1000(n%100) : '');
+    }
+
+    num = Math.round(num);
+    if (num < 0) return 'Minus ' + numberToWordsINR(-num);
+
+    let result = '';
+    const crore = Math.floor(num / 10000000);
+    num %= 10000000;
+    const lakh = Math.floor(num / 100000);
+    num %= 100000;
+    const thousand = Math.floor(num / 1000);
+    num %= 1000;
+    const remainder = num;
+
+    if (crore > 0) result += convertBelow1000(crore) + ' Crore ';
+    if (lakh > 0) result += convertBelow1000(lakh) + ' Lakh ';
+    if (thousand > 0) result += convertBelow1000(thousand) + ' Thousand ';
+    if (remainder > 0) result += convertBelow1000(remainder);
+
+    return result.trim() + ' Rupees';
+}
+
+function calculate() {
+    const plotSize = parseFloat(document.getElementById('plotSize').value) || 0;
+    const ratePerYard = parseFloat(document.getElementById('ratePerYard').value) || 0;
+    let totalPrice = parseFloat(document.getElementById('totalPrice').value) || 0;
+
+    // Auto-calculate total if plot size and rate are filled
+    const calculated = plotSize * ratePerYard;
+    if (calculated > 0 && document.activeElement.id !== 'totalPrice') {
+        totalPrice = calculated;
+        document.getElementById('totalPrice').value = totalPrice;
+    }
+
+    const cashPct = parseFloat(document.getElementById('cashSlider').value) / 100;
+    const onlinePct = 1 - cashPct;
+
+    const registryRate = parseFloat(document.getElementById('registryRate').value) / 100;
+    const cessRate = parseFloat(document.getElementById('cessRate').value) / 100;
+    const tdsRate = parseFloat(document.getElementById('tdsRate').value) / 100;
+    const brokerageRate = parseFloat(document.getElementById('brokerageRate').value) / 100;
+
+    const cashAmount = totalPrice * cashPct;
+    const onlineAmount = totalPrice * onlinePct;
+
+    const registry = onlineAmount * registryRate;
+    const cess = onlineAmount * cessRate;
+    const tds = onlineAmount * tdsRate;
+    const brokerage = totalPrice * brokerageRate;
+
+    const grandTotal = totalPrice + registry + cess + tds + brokerage;
+
+    const sellerGetsOnline = onlineAmount - tds;
+    const sellerGetsTotal = cashAmount + sellerGetsOnline;
+
+    // Update price in words
+    document.getElementById('totalPriceWords').textContent = numberToWordsINR(totalPrice);
+
+    // Update slider labels
+    document.getElementById('cashPctLabel').textContent = Math.round(cashPct * 100) + '%';
+    document.getElementById('onlinePctLabel').textContent = Math.round(onlinePct * 100) + '%';
+
+    // Update summary boxes
+    document.getElementById('cashAmount').textContent = formatINR(Math.round(cashAmount));
+    document.getElementById('onlineAmount').textContent = formatINR(Math.round(onlineAmount));
+    document.getElementById('propertyTotal').textContent = formatINR(Math.round(totalPrice));
+
+    // Update results
+    document.getElementById('resultTotal').textContent = formatINR(Math.round(totalPrice));
+    document.getElementById('resultCash').textContent = formatINR(Math.round(cashAmount));
+    document.getElementById('resultOnline').textContent = formatINR(Math.round(onlineAmount));
+    document.getElementById('resultRegistry').textContent = formatINR(Math.round(registry));
+    document.getElementById('resultCess').textContent = formatINR(Math.round(cess));
+    document.getElementById('resultTDS').textContent = formatINR(Math.round(tds));
+    document.getElementById('resultBrokerage').textContent = formatINR(Math.round(brokerage));
+    document.getElementById('resultGrandTotal').textContent = formatINR(Math.round(grandTotal));
+    document.getElementById('grandTotalWords').textContent = numberToWordsINR(Math.round(grandTotal));
+
+    // Rate displays
+    document.getElementById('regRateDisplay').textContent = (registryRate * 100) + '%';
+    document.getElementById('cessRateDisplay').textContent = (cessRate * 100) + '%';
+    document.getElementById('tdsRateDisplay').textContent = (tdsRate * 100) + '%';
+    document.getElementById('brkRateDisplay').textContent = (brokerageRate * 100) + '%';
+
+    // Seller breakdown
+    document.getElementById('sellerCash').textContent = formatINR(Math.round(cashAmount));
+    document.getElementById('sellerOnline').textContent = formatINR(Math.round(sellerGetsOnline));
+    document.getElementById('sellerTotal').textContent = formatINR(Math.round(sellerGetsTotal));
+    document.getElementById('tdsNote').textContent = Math.round(tds).toLocaleString('en-IN');
+}
+
+// Initial calculation
+calculate();
+</script>
+</body>
+</html>
